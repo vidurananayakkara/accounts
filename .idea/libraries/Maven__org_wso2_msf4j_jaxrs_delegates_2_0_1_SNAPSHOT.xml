@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="Maven: org.wso2.msf4j:jaxrs-delegates:2.0.1-SNAPSHOT">
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/org/wso2/msf4j/jaxrs-delegates/2.0.1-SNAPSHOT/jaxrs-delegates-2.0.1-20160804.185553-13.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$MAVEN_REPOSITORY$/org/wso2/msf4j/jaxrs-delegates/2.0.1-SNAPSHOT/jaxrs-delegates-2.0.1-20160804.185553-13-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$MAVEN_REPOSITORY$/org/wso2/msf4j/jaxrs-delegates/2.0.1-SNAPSHOT/jaxrs-delegates-2.0.1-20160804.185553-13-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>
