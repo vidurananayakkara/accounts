@@ -19,11 +19,17 @@
 package org.wso2.msf4j.examples.accounts;
 
 import org.wso2.msf4j.MicroservicesRunner;
+import org.wso2.msf4j.examples.accounts.exceptions.AccountException;
 
+/**
+ * Main application class
+ */
 public class Application {
 
     public static void main(String[] args) {
+
         new MicroservicesRunner()
+                .addExceptionMapper(new AccountException())
                 .deploy(new AccountService())
                 .start();
     }
