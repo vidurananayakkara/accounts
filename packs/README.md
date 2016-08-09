@@ -1,0 +1,1 @@
+**NOTES ON ADDING MSF4J into WSO2 Carbon Kernel**
