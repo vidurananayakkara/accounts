@@ -15,35 +15,29 @@
 * specific language governing permissions and limitations
 * under the License.
 */
-
 package org.wso2.examples.accounts.exceptions;
 
+import org.osgi.service.component.annotations.Component;
+
+import javax.ws.rs.core.Response;
+import javax.ws.rs.ext.ExceptionMapper;
+
 /**
- * Exception when an account is not found.
+ * ExceptionMapper which handled AccountException.
  */
-public class AccountException extends Exception {
+@Component(
+        name = "org.wso2.examples.accounts.exceptions.AccountExceptionMapper",
+        service = ExceptionMapper.class,
+        immediate = true
+)
+public class AccountExceptionMapper implements ExceptionMapper<AccountException> {
 
-    public AccountException() {
+    @Override
+    public Response toResponse(AccountException e) {
 
-        super();
-    }
-
-    public AccountException(String message) {
-        super(message);
-    }
-
-    public AccountException(String message, Throwable cause) {
-
-        super(message, cause);
-    }
-
-    public AccountException(Throwable cause) {
-
-        super(cause);
-    }
-
-    protected AccountException(String message, Throwable cause,
-                               boolean enableSuppression, boolean writableStackTrace) {
-        super(message, cause, enableSuppression, writableStackTrace);
+        return Response.status(Response.Status.NOT_FOUND).
+                entity(e.toString()).
+                type("text/plain").
+                build();
     }
 }

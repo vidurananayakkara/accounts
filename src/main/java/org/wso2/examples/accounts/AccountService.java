@@ -31,6 +31,7 @@ import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.wso2.examples.accounts.exceptions.AccountException;
 import org.wso2.msf4j.Microservice;
 
 import javax.annotation.PostConstruct;
@@ -39,6 +40,7 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.core.Response;
 
 /**
  * AccountService micro-service.
@@ -102,8 +104,9 @@ public class AccountService implements Microservice {
      * Retrieve account information for a given account.
      * http://localhost:{carbon configuration port}/accounts/{SomeAccountName}
      *
-     * @param accountName account name
+     * @param accountname account name
      * @return account name
+     * @throws AccountException account exception
      */
     @GET
     @Path("/{accountname}")
@@ -121,9 +124,16 @@ public class AccountService implements Microservice {
                     message = "Account information not found"
             )
     })
-    public String hello(@PathParam("accountname") String accountName) {
-        LOGGER.info("Hello " + accountName);
-        return "Hello " + accountName;
+    public Response hello(@PathParam("accountname") String accountname)
+            throws AccountException {
+
+        if (accountname == null || accountname.isEmpty()) {
+            LOGGER.info("Account not found");
+            throw new AccountException("Account not found");
+        }
+
+        LOGGER.info("Account " + accountname + " located");
+        return Response.status(Response.Status.OK).build();
     }
 
     /**

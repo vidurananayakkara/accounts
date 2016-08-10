@@ -13,6 +13,7 @@ hs_err_pid*
 
 # Ignore everything in this directory
 target
+deployment/docker/package
 .classpath
 .settings
 .project

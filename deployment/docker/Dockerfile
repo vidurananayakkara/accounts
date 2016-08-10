@@ -18,19 +18,52 @@
 #
 # ------------------------------------------------------------------------
 
-FROM java:8-jre
+# Pull base image
+FROM ubuntu:14.04
 MAINTAINER architecture@wso2.org
 
 WORKDIR /opt
 
+# Install Oracle Java.
+RUN apt-get update                                                                         && \
+    apt-get install software-properties-common -y                                          && \
+    add-apt-repository ppa:webupd8team/java -y                                             && \
+    apt-get update                                                                         && \
+    echo debconf shared/accepted-oracle-license-v1-1 select true | debconf-set-selections  && \
+    apt-get install oracle-java8-installer -y                                              && \
+    rm -rf /var/lib/apt/lists/*                                                            && \
+    rm -rf /var/cache/oracle-jdk8-installer
+
+# Install unzip zip.
+RUN add-apt-repository main                                                                && \
+    add-apt-repository universe                                                            && \
+    add-apt-repository restricted                                                          && \
+    add-apt-repository multiverse                                                          && \
+    apt-get update                                                                         && \
+    apt-get install zip unzip
+
+# --------------------------------
+# Environment variables
+# --------------------------------
+ENV WSO2_CARBON_VERSION 5.2.0-SNAPSHOT
+ENV JAVA_HOME /usr/lib/jvm/java-8-oracle
+ENV CARBON_HOME /opt/wso2carbon-kernel-$WSO2_CARBON_VERSION
+
 # --------------------------------
 # Copy scripts, packages & plugins
 # --------------------------------
-COPY package/accounts.jar /opt/
+ADD package/wso2carbon-kernel-$WSO2_CARBON_VERSION.zip /opt/
+RUN unzip wso2carbon-kernel-$WSO2_CARBON_VERSION.zip
+RUN rm wso2carbon-kernel-$WSO2_CARBON_VERSION.zip
+COPY package/accounts.jar/ /opt/wso2carbon-kernel-$WSO2_CARBON_VERSION/osgi/dropins/
 
 #----------------------
 # Expose container ports
 # ----------------------
-EXPOSE 8080
+EXPOSE 9090
 
-ENTRYPOINT java -jar /opt/accounts.jar
+#----------------------
+# Start WSO2 Carbon kernel
+# ----------------------
+WORKDIR /opt/wso2carbon-kernel-$WSO2_CARBON_VERSION
+ENTRYPOINT ./bin/carbon.sh
