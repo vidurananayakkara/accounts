@@ -1,5 +1,3 @@
-#!/usr/bin/env bash
-
 # ------------------------------------------------------------------------
 #
 #  Copyright (c) 2005-2016, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
@@ -20,11 +18,7 @@
 #
 # ------------------------------------------------------------------------
 
-# Paths
-HOME_PATH=$(cd ../; pwd)
-DOCKER_PATH=${HOME_PATH}/deployment/docker
-
-# Variables
-DOCKER_COMPOSER_CONTAINER_NAME=accountservice
-DOCKER_COMPOSER_PROJECT_NAME=C5
-WSO2_CARBON_VERSION=5.2.0-SNAPSHOT
+accountservice:
+  build: .
+  ports:
+    - "9090"

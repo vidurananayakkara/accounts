@@ -29,34 +29,24 @@ cd ${SCRIPT_PATH}
 # Exporting variables
 source variables.sh
 
-# Create docker container through docker-compose
-runDockerCompose(){
-    # Go to docker image location
-    cd ${DOCKER_PATH}
+# check if the user provided an argument to scale up
+if [ -z $1 ]; then
+    echo "No figure mentioned to scale"
+    exit 1
+fi
 
-    # Up docker-composer
-    docker-compose -p ${DOCKER_COMPOSER_PROJECT_NAME} up -d
-}
+# Check if the user entered a number to scale the container
+regex='^[0-9]+$'
+if ! [[ $1 =~ $regex ]] ; then
+   echo "error: Scale should be a number !!!" >&2
+   exit 2
+fi
 
-# Function to display container ip address and container id
-displayContainerIdAndIpAddress(){
+# Go to docker image location
+cd ${DOCKER_PATH}
 
-    # Get container id
-    CONTAINER_ID=`docker-compose ps -q ${DOCKER_COMPOSER_CONTAINER_NAME}`
+# Scale up / down the containers according to the specified value
+echo "Scaling up / down containers..."
+docker-compose -p ${DOCKER_COMPOSER_PROJECT_NAME} scale ${DOCKER_COMPOSER_CONTAINER_NAME}=$1
 
-    # Get container ip address
-    IP_ADDRESS=`docker inspect --format '{{ .NetworkSettings.IPAddress }}' ${CONTAINER_ID}`
 
-    # Display container ip address and container id
-    echo "${1} started: [IP_ADDRESS] ${IP_ADDRESS} [CONTAINER_ID] ${CONTAINER_ID}"
-}
-
-# Function to start accounts service
-startAccountService(){
-    echo "Starting to run AccountsService solution..."
-    runDockerCompose
-}
-
-# Start micro-services in docker containers
-startAccountService
-displayContainerIdAndIpAddress
