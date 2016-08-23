@@ -1,0 +1,305 @@
+# ------------------------------------------------------------------------
+#
+#  Copyright (c) 2005-2016, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+#
+#  WSO2 Inc. licenses this file to you under the Apache License,
+#  Version 2.0 (the "License"); you may not use this file except
+#  in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+# ------------------------------------------------------------------------
+
+require 'open-uri'
+require 'net/http'
+
+module OS
+    def self.windows?
+        (/cygwin|mswin|mingw|bccwin|wince|emx/ =~ RUBY_PLATFORM) != nil
+    end
+
+    def self.mac?
+        (/darwin/ =~ RUBY_PLATFORM) != nil
+    end
+
+    def self.unix?
+        !OS.windows?
+    end
+
+    def self.linux?
+        OS.unix? && !OS.mac?
+    end
+end
+
+required_plugins = %w(vagrant-triggers)
+
+# check either 'http_proxy' or 'HTTP_PROXY' environment variable
+enable_proxy = !(ENV['HTTP_PROXY'] || ENV['http_proxy'] || '').empty?
+required_plugins.push('vagrant-proxyconf') if enable_proxy
+
+required_plugins.each do |plugin|
+    need_restart = false
+    unless Vagrant.has_plugin? plugin
+        system "vagrant plugin install #{plugin}"
+        need_restart = true
+    end
+    exec "vagrant #{ARGV.join(' ')}" if need_restart
+end
+
+# -----------------------CONTANTS-----------------------------------------
+
+VAGRANTFILE_API_VERSION = '2'.freeze
+Vagrant.require_version '>= 1.6.0'
+
+MASTER_YAML = File.join(File.dirname(__FILE__), 'master.yaml')
+
+KUBERNETES_VERSION = ENV['KUBERNETES_VERSION'] || '1.3.5'
+
+CHANNEL = ENV['CHANNEL'] || 'alpha'
+# if CHANNEL != 'alpha'
+#  puts "============================================================================="
+#  puts "As this is a fastly evolving technology CoreOS' alpha channel is the only one"
+#  puts "expected to behave reliably. While one can invoke the beta or stable channels"
+#  puts "please be aware that your mileage may vary a whole lot."
+#  puts "So, before submitting a bug, in this project, or upstreams (either kubernetes"
+#  puts "or CoreOS) please make sure it (also) happens in the (default) alpha channel."
+#  puts "============================================================================="
+# end
+
+url = "http://#{CHANNEL}.release.core-os.net/amd64-usr/current/version.txt"
+COREOS_VERSION = ENV['COREOS_VERSION'] || open(url).read.scan(/COREOS_VERSION=.*/)[0].gsub('COREOS_VERSION=', '')
+upstream = "http://#{CHANNEL}.release.core-os.net/amd64-usr/#{COREOS_VERSION}"
+
+MASTER_MEM = ENV['MASTER_MEM'] || 1024
+MASTER_CPUS = ENV['MASTER_CPUS'] || 1
+
+BASE_IP_ADDR = ENV['BASE_IP_ADDR'] || '172.17.4.100'
+
+DNS_DOMAIN = ENV['DNS_DOMAIN'] || 'cluster.local'
+DNS_UPSTREAM_SERVERS = ENV['DNS_UPSTREAM_SERVERS'] || '8.8.8.8:53,8.8.4.4:53'
+
+USE_KUBE_UI = ENV['USE_KUBE_UI'] || false
+
+BOX_TIMEOUT_COUNT = ENV['BOX_TIMEOUT_COUNT'] || 50
+
+if enable_proxy
+    HTTP_PROXY = ENV['HTTP_PROXY'] || ENV['http_proxy']
+    HTTPS_PROXY = ENV['HTTPS_PROXY'] || ENV['https_proxy']
+    NO_PROXY = ENV['NO_PROXY'] || ENV['no_proxy'] || 'localhost'
+end
+
+# -----------------------END OF CONTANTS----------------------------------
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+    # Always use Vagrants' insecure key
+    config.ssh.insert_key = false
+    config.ssh.forward_agent = true
+
+    # CoreOS vm box configuration
+    config.vm.box = "coreos-#{CHANNEL}"
+    config.vm.box_version = ">= #{COREOS_VERSION}"
+    config.vm.box_url = "#{upstream}/coreos_production_vagrant.json"
+
+    # Provider - virtual box and relevant information
+    config.vm.provider 'virtualbox' do |v|
+        v.cpus = MASTER_CPUS
+        v.memory = MASTER_MEM
+        v.gui = false
+
+        # On VirtualBox, we don't have guest additions or a functional vboxsf
+        v.check_guest_additions = false
+        v.functional_vboxsf     = false
+    end
+
+    # Plugin conflict
+    config.vbguest.auto_update = false if Vagrant.has_plugin?('vagrant-vbguest')
+
+    # Setup VM proxy to system proxy environment
+    if Vagrant.has_plugin?('vagrant-proxyconf') && enable_proxy
+        config.proxy.http = HTTP_PROXY
+        config.proxy.https = HTTPS_PROXY
+        config.proxy.no_proxy = NO_PROXY
+        # proxyconf plugin use wrong approach to set Docker proxy for CoreOS
+        # force proxyconf to skip Docker proxy setup
+        config.proxy.enabled = { docker: false }
+    end
+
+    # ------------------------------------------------------------------------
+    # Setting up kubernates
+    # ------------------------------------------------------------------------
+
+    hostname = 'accountservicemaster'
+    ETCD_SEED_CLUSTER = "#{hostname}=http://#{BASE_IP_ADDR}:2380".freeze
+    cfg = MASTER_YAML
+    MASTER_IP = BASE_IP_ADDR.freeze
+
+    config.vm.define vmName = hostname do |kHost|
+        kHost.vm.hostname = vmName
+
+        # suspend / resume is hard to be properly supported because we have no way
+        # to assure the fully deterministic behavior of whatever is inside the VMs
+        # when faced with XXL clock gaps... so we just disable this functionality.
+        kHost.trigger.reject [:suspend, :resume] do
+            info "'vagrant suspend' and 'vagrant resume' are disabled."
+            info "- please do use 'vagrant halt' and 'vagrant up' instead."
+        end
+
+        config.trigger.instead_of :reload do
+            exec 'vagrant halt && vagrant up'
+            exit
+        end
+
+        # ------------------------------------------------------------------------
+        # Setting up kubernates in Master
+        # ------------------------------------------------------------------------
+
+        kHost.trigger.before [:up, :provision] do
+            info "Setting Kubernetes version #{KUBERNETES_VERSION}"
+            sedInplaceArg = OS.mac? ? " ''" : ''
+            system 'cp setup.tmpl temp/setup'
+            system "sed -e 's|__KUBERNETES_VERSION__|#{KUBERNETES_VERSION}|g' -i#{sedInplaceArg} ./temp/setup"
+            system "sed -e 's|__MASTER_IP__|#{MASTER_IP}|g' -i#{sedInplaceArg} ./temp/setup"
+            if enable_proxy
+                system "sed -e 's|__PROXY_LINE__||g' -i#{sedInplaceArg} ./temp/setup"
+                system "sed -e 's|__NO_PROXY__|#{NO_PROXY}|g' -i#{sedInplaceArg} ./temp/setup"
+            else
+                system "sed -e '/__PROXY_LINE__/d' -i#{sedInplaceArg} ./temp/setup"
+            end
+            system 'chmod +x temp/setup'
+
+            info 'Configuring Kubernetes cluster DNS...'
+            kHost.vm.provision :file, source: File.join(File.dirname(__FILE__), 'kube-system.yml'), destination: '/home/core/kube-system.yml'
+            system 'cp plugins/dns/dns-controller.yml.tmpl temp/dns-controller.yml'
+            system "sed -e 's|__MASTER_IP__|#{MASTER_IP}|g' -i#{sedInplaceArg} ./temp/dns-controller.yml"
+            system "sed -e 's|__DNS_DOMAIN__|#{DNS_DOMAIN}|g' -i#{sedInplaceArg} ./temp/dns-controller.yml"
+            system "sed -e 's|__DNS_UPSTREAM_SERVERS__|#{DNS_UPSTREAM_SERVERS}|g' -i#{sedInplaceArg} ./temp/dns-controller.yml"
+
+            if OS.windows?
+                kHost.vm.provision :file, source: File.join(File.dirname(__FILE__), 'temp/setup'), destination: '/home/core/kubectlsetup'
+                kHost.vm.provision :file, source: File.join(File.dirname(__FILE__), 'temp/dns-controller.yml'), destination: '/home/core/dns-controller.yml'
+                kHost.vm.provision :file, source: File.join(File.dirname(__FILE__), 'plugins/dns/dns-service.yml'), destination: '/home/core/dns-service.yml'
+
+                if USE_KUBE_UI
+                    kHost.vm.provision :file, source: File.join(File.dirname(__FILE__), 'plugins/kube-ui/kube-ui-controller.yml'), destination: '/home/core/kube-ui-controller.yml'
+                    kHost.vm.provision :file, source: File.join(File.dirname(__FILE__), 'plugins/kube-ui/kube-ui-service.yml'), destination: '/home/core/kube-ui-service.yml'
+                end
+            end
+        end
+
+        kHost.trigger.after [:up, :resume] do
+            info 'Sanitizing stuff...'
+            system 'ssh-add ~/.vagrant.d/insecure_private_key'
+            system 'rm -rf ~/.fleetctl/known_hosts'
+        end
+
+        kHost.trigger.after [:up] do
+            info 'Waiting for Kubernetes master to become ready...'
+            j = 0
+            uri = URI("http://#{MASTER_IP}:8080")
+            res = nil
+            loop do
+                j += 1
+                begin
+                    res = Net::HTTP.get_response(uri)
+                rescue
+                    sleep 5
+                end
+                break if res.is_a?(Net::HTTPSuccess) || j >= BOX_TIMEOUT_COUNT
+            end
+
+            info 'Installing kubectl for the Kubernetes version we just bootstrapped...'
+            if OS.windows?
+                run_remote 'sudo -u core /bin/sh /home/core/kubectlsetup install'
+            else
+                system './temp/setup install'
+            end
+
+            res = nil
+            uri.path = '/api/v1/namespaces/kube-system/replicationcontrollers/kube-dns'
+            begin
+                res = Net::HTTP.get_response(uri)
+            rescue
+            end
+            unless res.is_a? Net::HTTPSuccess
+                if OS.windows?
+                    run_remote '/opt/bin/kubectl create -f /home/core/kube-system.yml'
+                    run_remote '/opt/bin/kubectl create -f /home/core/dns-controller.yml'
+                else
+                    system "KUBERNETES_MASTER=\"http://#{MASTER_IP}:8080\" kubectl create -f kube-system.yml"
+                    system "KUBERNETES_MASTER=\"http://#{MASTER_IP}:8080\" kubectl create -f temp/dns-controller.yml"
+                end
+            end
+
+            res = nil
+            uri.path = '/api/v1/namespaces/kube-system/services/kube-dns'
+            begin
+                res = Net::HTTP.get_response(uri)
+            rescue
+            end
+            unless res.is_a? Net::HTTPSuccess
+                if OS.windows?
+                    run_remote '/opt/bin/kubectl create -f /home/core/dns-service.yml'
+                else
+                    system "KUBERNETES_MASTER=\"http://#{MASTER_IP}:8080\" kubectl create -f plugins/dns/dns-service.yml"
+                end
+            end
+
+            if USE_KUBE_UI
+                info 'Configuring Kubernetes kube-ui...'
+                res = nil
+                uri.path = '/api/v1/namespaces/kube-system'
+                begin
+                    res = Net::HTTP.get_response(uri)
+                rescue
+                end
+                unless res.is_a? Net::HTTPSuccess
+                    if OS.windows?
+                        run_remote '/opt/bin/kubectl create -f /home/core/kube-system.yml'
+                    else
+                        system "KUBERNETES_MASTER=\"http://#{MASTER_IP}:8080\" kubectl create -f kube-system.yml"
+                    end
+                end
+
+                res = nil
+                uri.path = '/api/v1/namespaces/kube-system/replicationcontrollers/kube-ui-v3'
+                begin
+                    res = Net::HTTP.get_response(uri)
+                rescue
+                end
+                unless res.is_a? Net::HTTPSuccess
+                    if OS.windows?
+                        run_remote '/opt/bin/kubectl create -f /home/core/kube-ui-controller.yml'
+                    else
+                        system "KUBERNETES_MASTER=\"http://#{MASTER_IP}:8080\" kubectl create -f plugins/kube-ui/kube-ui-controller.yml"
+                    end
+                end
+
+                res = nil
+                uri.path = '/api/v1/namespaces/kube-system/services/kube-ui'
+                begin
+                    res = Net::HTTP.get_response(uri)
+                rescue
+                end
+                unless res.is_a? Net::HTTPSuccess
+                    if OS.windows?
+                        run_remote '/opt/bin/kubectl create -f /home/core/kube-ui-service.yml'
+                    else
+                        system "KUBERNETES_MASTER=\"http://#{MASTER_IP}:8080\" kubectl create -f plugins/kube-ui/kube-ui-service.yml"
+                    end
+                end
+
+                info "Kubernetes kube-ui will be available on http://#{MASTER_IP}:8080/ui"
+            end
+        end
+    end
+
+    # ------------------------------------------------------------------------
+end
