@@ -14,6 +14,8 @@ hs_err_pid*
 # Ignore everything in this directory
 target
 deployment/docker/package
+vagrant/.vagrant
+vagrant/temp
 .classpath
 .settings
 .project
