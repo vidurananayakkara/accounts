@@ -79,7 +79,7 @@ public abstract class AbstractRepository<T> {
     protected void remove(final T t) {
 
         EntityManager manager = beginTransactionAndGetEntityManager();
-        manager.remove(t);
+        manager.remove(manager.contains(t) ? t : manager.merge(t));
         commitTransaction(manager);
     }
 
