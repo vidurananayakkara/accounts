@@ -15,7 +15,8 @@
 * specific language governing permissions and limitations
 * under the License.
 */
-package org.wso2.examples.accounts.exceptions;
+
+package org.wso2.examples.accounts.accountservice.exceptions;
 
 import org.osgi.service.component.annotations.Component;
 
@@ -32,6 +33,12 @@ import javax.ws.rs.ext.ExceptionMapper;
 )
 public class AccountExceptionMapper implements ExceptionMapper<AccountException> {
 
+    /**
+     * Generate user friendly error message when an account exception occurs
+     *
+     * @param e AccountException
+     * @return Response
+     */
     @Override
     public Response toResponse(AccountException e) {
 

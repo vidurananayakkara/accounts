@@ -1,0 +1,9 @@
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd" >
+<suite name="RepositoryTest">
+    <test name="repository">
+        <classes>
+            <class name="org.wso2.examples.accounts.dataservice.unittests.AccountRepositoryTest"/>
+            <class name="org.wso2.examples.accounts.dataservice.unittests.UserRepositoryTest"/>
+        </classes>
+    </test>
+</suite>

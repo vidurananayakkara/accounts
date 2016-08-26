@@ -35,7 +35,7 @@ runDockerCompose(){
     cd ${DOCKER_PATH}
 
     # Up docker-composer
-    docker-compose -p ${DOCKER_COMPOSER_PROJECT_NAME} up -d
+    docker-compose -p ${DOCKER_COMPOSER_PROJECT_NAME} up
 }
 
 # Function to display container ip address and container id

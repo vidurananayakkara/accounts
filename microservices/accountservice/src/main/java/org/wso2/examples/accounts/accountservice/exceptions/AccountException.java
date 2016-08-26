@@ -16,32 +16,59 @@
 * under the License.
 */
 
-package org.wso2.examples.accounts.exceptions;
+package org.wso2.examples.accounts.accountservice.exceptions;
 
 /**
  * Exception when an account is not found.
  */
 public class AccountException extends Exception {
 
+    /**
+     * Account exception default constructor.
+     */
     public AccountException() {
 
         super();
     }
 
+    /**
+     * Account exception constructor.
+     *
+     * @param message String
+     */
     public AccountException(String message) {
         super(message);
     }
 
+    /**
+     * Account exception constructor.
+     *
+     * @param message String
+     * @param cause   Throwable
+     */
     public AccountException(String message, Throwable cause) {
 
         super(message, cause);
     }
 
+    /**
+     * Account exception constructor.
+     *
+     * @param cause Throwable
+     */
     public AccountException(Throwable cause) {
 
         super(cause);
     }
 
+    /**
+     * Account exception constructor.
+     *
+     * @param message            String
+     * @param cause              Throwable
+     * @param enableSuppression  boolean
+     * @param writableStackTrace boolean
+     */
     protected AccountException(String message, Throwable cause,
                                boolean enableSuppression, boolean writableStackTrace) {
         super(message, cause, enableSuppression, writableStackTrace);

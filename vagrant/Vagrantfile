@@ -137,9 +137,9 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     # ------------------------------------------------------------------------
 
     hostname = 'accountservicemaster'
-    ETCD_SEED_CLUSTER = "#{hostname}=http://#{BASE_IP_ADDR}:2380".freeze
+    ETCD_SEED_CLUSTER = "#{hostname}=http://#{BASE_IP_ADDR}:2380"
     cfg = MASTER_YAML
-    MASTER_IP = BASE_IP_ADDR.freeze
+    MASTER_IP = BASE_IP_ADDR
 
     config.vm.define vmName = hostname do |kHost|
         kHost.vm.hostname = vmName
@@ -164,7 +164,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
         kHost.trigger.before [:up, :provision] do
             info "Setting Kubernetes version #{KUBERNETES_VERSION}"
             sedInplaceArg = OS.mac? ? " ''" : ''
-            system 'cp setup.tmpl temp/setup'
+            system 'cp kubernetes_setup.tmpl temp/setup'
             system "sed -e 's|__KUBERNETES_VERSION__|#{KUBERNETES_VERSION}|g' -i#{sedInplaceArg} ./temp/setup"
             system "sed -e 's|__MASTER_IP__|#{MASTER_IP}|g' -i#{sedInplaceArg} ./temp/setup"
             if enable_proxy
@@ -229,6 +229,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
             rescue
             end
             unless res.is_a? Net::HTTPSuccess
+                info 'Creating Kube namespace and Kube DNS replication controller...'
                 if OS.windows?
                     run_remote '/opt/bin/kubectl create -f /home/core/kube-system.yml'
                     run_remote '/opt/bin/kubectl create -f /home/core/dns-controller.yml'
@@ -245,6 +246,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
             rescue
             end
             unless res.is_a? Net::HTTPSuccess
+                info 'Creating Kube DNS service...'
                 if OS.windows?
                     run_remote '/opt/bin/kubectl create -f /home/core/dns-service.yml'
                 else

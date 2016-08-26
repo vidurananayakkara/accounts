@@ -16,7 +16,7 @@
 * under the License.
 */
 
-package org.wso2.examples.accounts;
+package org.wso2.examples.accounts.accountservice;
 
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
@@ -31,7 +31,7 @@ import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.wso2.examples.accounts.exceptions.AccountException;
+import org.wso2.examples.accounts.accountservice.exceptions.AccountException;
 import org.wso2.msf4j.Microservice;
 
 import javax.annotation.PostConstruct;
@@ -50,11 +50,6 @@ import javax.ws.rs.core.Response;
         service = Microservice.class,
         immediate = true
 )
-
-
-/**
- * Accounts resource class.
- */
 @Path("/accounts")
 @SwaggerDefinition(
         info = @Info(
@@ -155,4 +150,3 @@ public class AccountService implements Microservice {
     }
 
 }
-
