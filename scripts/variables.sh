@@ -22,9 +22,11 @@
 
 # Paths
 HOME_PATH=$(cd ../; pwd)
-DOCKER_PATH=${HOME_PATH}/deployment/docker
+DOCKER_PATH_ACCOUNT_SERVICE=${HOME_PATH}/microservices/accountservice/deployment
+DOCKER_PATH_DATA_SERVICE=${HOME_PATH}/microservices/dataservice/deployment
 
 # Variables
-DOCKER_COMPOSER_CONTAINER_NAME=accountservice
-DOCKER_COMPOSER_PROJECT_NAME=C5
+VERSION=1.0-SNAPSHOT
+DOCKER_IMAGE_NAME_ACCOUNT_SERVICE=c5/accountsservice:${VERSION}
+DOCKER_IMAGE_NAME_DATA_SERVICE=c5/dataservice:${VERSION}
 WSO2_CARBON_VERSION=5.2.0-SNAPSHOT

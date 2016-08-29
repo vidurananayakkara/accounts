@@ -55,7 +55,20 @@ ENV CARBON_HOME /opt/wso2carbon-kernel-$WSO2_CARBON_VERSION
 ADD package/wso2carbon-kernel-$WSO2_CARBON_VERSION.zip /opt/
 RUN unzip wso2carbon-kernel-$WSO2_CARBON_VERSION.zip
 RUN rm wso2carbon-kernel-$WSO2_CARBON_VERSION.zip
-COPY package/accounts.jar/ /opt/wso2carbon-kernel-$WSO2_CARBON_VERSION/osgi/dropins/
+COPY package/accountservice.jar/ /opt/wso2carbon-kernel-$WSO2_CARBON_VERSION/osgi/dropins/
+
+# --------------------------------
+# Remove unnecessary packages
+# --------------------------------
+RUN apt-get remove zip unzip -y                                                            && \
+    add-apt-repository --remove multiverse -y                                              && \
+    add-apt-repository --remove restricted -y                                              && \
+    add-apt-repository --remove universe -y                                                && \
+    add-apt-repository --remove main -y                                                    && \
+    apt-get update                                                                         && \
+    apt-get clean                                                                          && \
+    apt-get autoclean                                                                      && \
+    apt-get autoremove -y
 
 #----------------------
 # Expose container ports

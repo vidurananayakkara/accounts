@@ -40,9 +40,6 @@ PRE_REQ=1
 # Check if docker exists
 command -v docker >/dev/null 2>&1 || { echo >&2 "Missing docker!!! Build required docker install in the host.";${PRE_REQ}=1; }
 
-# Check if docker-compose exists
-command -v docker-compose >/dev/null 2>&1 || { echo >&2 "Missing docker-compose!!! Build required docker-compose install in the host.";${PRE_REQ}=1; }
-
 if [ ${PRE_REQ} -eq 0 ];then
     echo "--------------------------------------------------------------"
     echo "Prerequisite not met. Existing build..."
@@ -50,7 +47,14 @@ if [ ${PRE_REQ} -eq 0 ];then
     exit;
 fi
 
-echo "Copying WSO2 Carbon Kernel $WSO2_CARBON_VERSION to packages location..."
-cp ${HOME_PATH}/packs/wso2carbon-kernel-${WSO2_CARBON_VERSION}.zip ${HOME_PATH}/deployment/docker/package/
+echo "Copying WSO2 Carbon Kernel $WSO2_CARBON_VERSION to packages locations..."
+cp ${HOME_PATH}/packs/wso2carbon-kernel-${WSO2_CARBON_VERSION}.zip ${HOME_PATH}/microservices/accountservice/deployment/package/
+cp ${HOME_PATH}/packs/wso2carbon-kernel-${WSO2_CARBON_VERSION}.zip ${HOME_PATH}/microservices/dataservice/deployment/package/
+
+echo "Copying database configuration properties file..."
+cp ${HOME_PATH}/microservices/dataservice/src/main/resources/configuration/configuration.properties ${HOME_PATH}/microservices/dataservice/deployment/package/
+
+echo "Copying generated sql script..."
+cp ${HOME_PATH}/microservices/dataservice/target/hibernate3/sql/create-schema.sql ${HOME_PATH}/microservices/dataservice/deployment/package/
 
 ${SCRIPT_PATH}/bootstrap.sh

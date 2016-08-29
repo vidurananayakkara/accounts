@@ -119,24 +119,6 @@
                 <artifactId>maven-antrun-plugin</artifactId>
                 <version>${maven-antrun-plugin.version}</version>
                 <executions>
-                    <!-- Main database table creation -->
-                    <execution>
-                        <id>run-ddl-create</id>
-                        <phase>process-classes</phase>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                        <configuration>
-                            <target>
-                                <java classname="org.wso2.examples.accounts.dataservice.tools.JpaSchemaRun"
-                                      fork="true" failonerror="true">
-                                    <arg value="src/main/resources/configuration/configuration.properties"/>
-                                    <arg value="target/hibernate3/sql/create-schema.sql"/>
-                                    <classpath refid="maven.compile.classpath"/>
-                                </java>
-                            </target>
-                        </configuration>
-                    </execution>
                     <execution>
                         <id>run-ddl-create-test</id>
                         <phase>process-classes</phase>
@@ -152,6 +134,29 @@
                                     <classpath refid="maven.compile.classpath"/>
                                 </java>
                             </target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>install-jar</id>
+                        <phase>install</phase>
+                        <goals>
+                            <goal>copy</goal>
+                        </goals>
+                        <configuration>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>${project.groupId}</groupId>
+                                    <artifactId>${project.artifactId}</artifactId>
+                                    <version>${accountservice.version}</version>
+                                </artifactItem>
+                            </artifactItems>
+                            <outputDirectory>deployment/package</outputDirectory>
+                            <stripVersion>true</stripVersion>
                         </configuration>
                     </execution>
                 </executions>

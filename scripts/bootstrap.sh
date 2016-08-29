@@ -29,34 +29,58 @@ cd ${SCRIPT_PATH}
 # Exporting variables
 source variables.sh
 
-# Create docker container through docker-compose
-runDockerCompose(){
+# Function to run docker images
+# $1 is the docker file path
+# $1 is the docker image name
+runDockerImage(){
     # Go to docker image location
-    cd ${DOCKER_PATH}
+    cd ${1}
+    # Check for docker image
+    # If the docker image exists ask user his / her choice
+    if docker history -q ${2} >/dev/null 2>&1; then
+        while true; do
+            echo "Docker image "${2}" exists. Do you want to re-build docker image (Y/y or N/n)?"
+            read -p "" yn
+            case ${yn} in
+                [Yy]* ) docker build -t ${2} .; break;;
+                [Nn]* ) break;;
+                * ) echo "Please answer (Y/y or N/n)";;
+            esac
+        done
+    else
+        # Build docker image
+        docker build -t ${2} .
+    fi
 
-    # Up docker-composer
-    docker-compose -p ${DOCKER_COMPOSER_PROJECT_NAME} up
+    # Run docker container
+    CONTAINER_ID=`docker run -d ${2}`
+
+    # Display docker container ip address information
+    displayContainerIdAndIpAddress ${CONTAINER_ID}
 }
 
 # Function to display container ip address and container id
 displayContainerIdAndIpAddress(){
 
-    # Get container id
-    CONTAINER_ID=`docker-compose ps -q ${DOCKER_COMPOSER_CONTAINER_NAME}`
-
     # Get container ip address
-    IP_ADDRESS=`docker inspect --format '{{ .NetworkSettings.IPAddress }}' ${CONTAINER_ID}`
+    IP_ADDRESS=`docker inspect --format '{{ .NetworkSettings.IPAddress }}' ${1}`
 
     # Display container ip address and container id
-    echo "${1} started: [IP_ADDRESS] ${IP_ADDRESS} [CONTAINER_ID] ${CONTAINER_ID}"
+    echo "${1} started: [IP_ADDRESS] ${IP_ADDRESS} [CONTAINER_ID] ${1}"
 }
 
 # Function to start accounts service
 startAccountService(){
-    echo "Starting to run AccountsService solution..."
-    runDockerCompose
+    echo "Starting to run AccountsService micro-service ..."
+    runDockerImage ${DOCKER_PATH_ACCOUNT_SERVICE} ${DOCKER_IMAGE_NAME_ACCOUNT_SERVICE}
+}
+
+# Function to start data service
+startDataService(){
+    echo "Starting to run DataService micro-service ..."
+    runDockerImage ${DOCKER_PATH_DATA_SERVICE} ${DOCKER_IMAGE_NAME_DATA_SERVICE}
 }
 
 # Start micro-services in docker containers
-startAccountService
-displayContainerIdAndIpAddress
+#startAccountService
+startDataService
