@@ -82,5 +82,5 @@ startDataService(){
 }
 
 # Start micro-services in docker containers
-#startAccountService
+startAccountService
 startDataService

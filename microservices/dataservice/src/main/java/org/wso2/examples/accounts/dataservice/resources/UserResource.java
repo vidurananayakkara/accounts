@@ -26,6 +26,7 @@ import io.swagger.annotations.Info;
 import io.swagger.annotations.License;
 import io.swagger.annotations.SwaggerDefinition;
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.FrameworkUtil;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
@@ -35,6 +36,12 @@ import org.wso2.examples.accounts.dataservice.beans.User;
 import org.wso2.examples.accounts.dataservice.dao.UserRepository;
 import org.wso2.msf4j.Microservice;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+import java.util.Properties;
+import javax.persistence.EntityManagerFactory;
+import javax.persistence.Persistence;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -103,12 +110,31 @@ public class UserResource implements Microservice {
 
     /**
      * UserResource constructor.
-     *
-     * @param userRepository UserRepository
      */
-    public UserResource(final UserRepository userRepository) {
+    public UserResource() {
 
-        this.users = userRepository;
+        String entityManagerFactoryName = "org.wso2.examples.accounts.dataservice";
+        String fileName =
+                "configuration/configuration.properties";
+
+        BundleContext context = FrameworkUtil.getBundle(AccountResource.class).getBundleContext();
+        URL configURL = context.getBundle().getEntry(fileName);
+        Properties properties = new Properties();
+
+        if (configURL != null) {
+            try {
+                InputStream input = configURL.openStream();
+                properties.load(input);
+                input.close();
+            } catch (IOException e) {
+                LOGGER.error(e.getMessage());
+            }
+        }
+
+        EntityManagerFactory emfactory =
+                Persistence.createEntityManagerFactory(entityManagerFactoryName, properties);
+
+        this.users = new UserRepository(emfactory);
     }
 
     /**

@@ -70,8 +70,31 @@
             <scope>provided</scope>
         </dependency>
     </dependencies>
+    <pluginRepositories>
+        <pluginRepository>
+            <id>reficio</id>
+            <url>http://repo.reficio.org/maven/</url>
+        </pluginRepository>
+    </pluginRepositories>
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.reficio</groupId>
+                <artifactId>p2-maven-plugin</artifactId>
+                <version>1.2.0-SNAPSHOT</version>
+                <executions>
+                    <execution>
+                        <id>default-cli</id>
+                        <configuration>
+                            <artifacts>
+                                <artifact>
+                                    <id>org.hibernate:hibernate-core:${hibernate.version}</id>
+                                </artifact>
+                            </artifacts>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>hibernate3-maven-plugin</artifactId>
@@ -172,7 +195,8 @@
             javax.xml.bind*,
             org.slf4j.*,
             io.swagger.annotations.*,
-            org.hibernate.*
+            org.hibernate.*;version="${hibernate.version}",
+            javax.persistence.*;version="${javax.persistence.version}"
         </import.package>
         <carbon.component>
             osgi.service; objectClass="org.wso2.msf4j.Microservice"
@@ -181,6 +205,7 @@
         <hibernate.version>5.2.2.Final</hibernate.version>
         <hibernate3-maven-plugin.version>2.2</hibernate3-maven-plugin.version>
         <javax.ws.rs-api.version>2.0.1</javax.ws.rs-api.version>
+        <javax.persistence.version>2.1.0</javax.persistence.version>
         <maven-antrun-plugin.version>1.7</maven-antrun-plugin.version>
         <maven-bundle-plugin.version>3.2.0</maven-bundle-plugin.version>
         <mysql-connector-java.version>6.0.3</mysql-connector-java.version>

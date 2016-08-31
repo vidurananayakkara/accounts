@@ -28,7 +28,6 @@
         <class>org.wso2.examples.accounts.dataservice.beans.Account</class>
         <class>org.wso2.examples.accounts.dataservice.beans.User</class>
 
-        <!-- For MySQL database -->
         <properties>
             <property name="hibernate.show_sql" value="true"/>
             <property name="hibernate.connection.autocommit" value="true"/>
