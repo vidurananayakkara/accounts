@@ -29,46 +29,32 @@ cd ${SCRIPT_PATH}
 # Exporting variables
 source variables.sh
 
-KUBERNETES_VERSION=1.3.6
-IS_KUBECTL=1
+# Move to sample's home directory
+cd ${HOME_PATH}
 
-echo "--------------------------------------------------------------"
-echo "Copying micro-service account service files..."
-echo "--------------------------------------------------------------"
-mkdir -p ${HOME_PATH}/vagrant/microservices/accountservice/deployment/package/
-cp ${HOME_PATH}/packs/wso2carbon-kernel-${WSO2_CARBON_VERSION}.zip ${HOME_PATH}/vagrant/microservices/accountservice/deployment/package/
-cp ${HOME_PATH}/microservices/accountservice/deployment/Dockerfile ${HOME_PATH}/vagrant/microservices/accountservice/deployment/
+# ------------------------------------------------------------------------
+# Check for prerequisites
+# ------------------------------------------------------------------------
+PRE_REQ=1
 
-echo "--------------------------------------------------------------"
-echo "Copying micro-service data service files..."
-echo "--------------------------------------------------------------"
-mkdir -p ${HOME_PATH}/vagrant/microservices/dataservice/deployment/package/
-cp ${HOME_PATH}/packs/wso2carbon-kernel-${WSO2_CARBON_VERSION}.zip ${HOME_PATH}/vagrant/microservices/dataservice/deployment/package/
-cp ${HOME_PATH}/microservices/dataservice/src/main/resources/configuration/configuration.properties ${HOME_PATH}/vagrant/microservices/dataservice/deployment/package/
-cp ${HOME_PATH}/microservices/dataservice/target/hibernate3/sql/create-schema.sql ${HOME_PATH}/vagrant/microservices/dataservice/deployment/package/
-cp ${HOME_PATH}/microservices/dataservice/deployment/Dockerfile ${HOME_PATH}/vagrant/microservices/accountservice/deployment/
+# Check if docker exists
+command -v docker >/dev/null 2>&1 || { echo >&2 "Missing docker!!! Build required docker install in the host.";${PRE_REQ}=1; }
 
-echo "--------------------------------------------------------------"
-echo "Setting up CoreOS and Kubernetes"
-echo "--------------------------------------------------------------"
-
-# Check if kubectl exists
-command -v kubectl >/dev/null 2>&1 || { echo >&2 "kubectl is missing... proceeding download... ";${IS_KUBECTL}=1; }
-
-if [ ${IS_KUBECTL} -eq 0 ];then
+if [ ${PRE_REQ} -eq 0 ];then
     echo "--------------------------------------------------------------"
-    echo "Downloading kubectl..."
+    echo "Prerequisite not met. Existing build..."
     echo "--------------------------------------------------------------"
-    if [[ "$OSTYPE" == "linux-gnu" ]]; then
-        wget https://storage.googleapis.com/kubernetes-release/release/v${KUBERNETES_VERSION}/bin/linux/amd64/kubectl
-    elif [[ "$OSTYPE" == "darwin"* ]]; then
-       wget https://storage.googleapis.com/kubernetes-release/release/v${KUBERNETES_VERSION}/bin/darwin/amd64/kubectl
-    fi
-    chmod +x kubectl
-    mv kubectl /usr/local/bin/kubectl
+    exit;
 fi
 
-KUBECTL=`which kubectl`
+echo "Copying WSO2 Carbon Kernel $WSO2_CARBON_VERSION to packages locations..."
+cp ${HOME_PATH}/packs/wso2carbon-kernel-${WSO2_CARBON_VERSION}.zip ${HOME_PATH}/microservices/accountservice/deployment/package/
+cp ${HOME_PATH}/packs/wso2carbon-kernel-${WSO2_CARBON_VERSION}.zip ${HOME_PATH}/microservices/dataservice/deployment/package/
 
-cd ${VAGRANT_HOME}
-vagrant up
+echo "Copying database configuration properties file..."
+cp ${HOME_PATH}/microservices/dataservice/src/main/resources/configuration/configuration.properties ${HOME_PATH}/microservices/dataservice/deployment/package/
+
+echo "Copying generated sql script..."
+cp ${HOME_PATH}/microservices/dataservice/target/hibernate3/sql/create-schema.sql ${HOME_PATH}/microservices/dataservice/deployment/package/
+
+${SCRIPT_PATH}/bootstrap.sh

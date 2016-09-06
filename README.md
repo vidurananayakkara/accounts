@@ -13,3 +13,7 @@ Architecture of the solution
 
 ![Architecture diagram](readme/architecturediagram.png)
 
+### Deployment ###
+
+![Deployment](readme/deployment.png)
+
