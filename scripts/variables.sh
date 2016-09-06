@@ -22,6 +22,7 @@
 
 # Paths
 HOME_PATH=$(cd ../; pwd)
+VAGRANT_HOME=${HOME_PATH}/vagrant
 DOCKER_PATH_ACCOUNT_SERVICE=${HOME_PATH}/microservices/accountservice/deployment
 DOCKER_PATH_DATA_SERVICE=${HOME_PATH}/microservices/dataservice/deployment
 

@@ -14,7 +14,3 @@ WSO2 Carbon 5 - multi-tenancy demonstration - data layer micro-service
 * For changing the database name, edit `javax.persistence.jdbc.url` key. The value should be `jdbc:mysql://localhost:`\<MySQL port\>`/`\<Database name\>. The default value ofthe \<MySQL port\> is `3306`
 
 * For changing the username and password for the MySQL login change `javax.persistence.jdbc.user` and `javax.persistence.jdbc.password` respectively.
-
-### ER diagram of the data layer micro-service ###
-
-![ER diagram](readme/erdiagram.png)
